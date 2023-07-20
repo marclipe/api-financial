@@ -5,7 +5,7 @@ const app = express();
 
 const customers = [];
 
-app.use(express.json()) //Middleware com o nosso json
+app.use(express.json())
 
 //Middleware de verificação de conta
 function verifyIfExistsAccountCPF(request, response, next) {
@@ -13,16 +13,13 @@ function verifyIfExistsAccountCPF(request, response, next) {
 
   const customer = customers.find((customer) => customer.cpf === cpf);
 
-  // Vou verificar se existe o meu customer, se não existir eu vou continuar retornando esse erro
   if (!customer) {
     return response.status(400).json({ error: "Customer not found!" });
   }
 
-  //Para passar o customer para as minhas rotas que estou utilizando o middleware
   request.customer = customer;
   console.log(customer)
 
-  //Se o customer existir vou deixar o processor seguir
   return next();
 }
 
@@ -50,9 +47,30 @@ app.post("/account", (request, response) => {
 // app.use(verifyIfExistsAccountCPF);
 
 app.get("/statement", verifyIfExistsAccountCPF, (request, response) => {
-  //Para passar o customer para as minhas rotas que estou utilizando o middleware
-  const { customer } = request; //para ter acesso o customer do middleware
+  const { customer } = request;
   return response.json(customer.statement);
+})
+
+//Vamos precisar do Middleware de verificação 
+app.post("/deposit", verifyIfExistsAccountCPF, (request, response) => {
+  //Precisamos dessas informações dentro do  statement: []
+  const { description, amount } = request.body;
+
+  const { customer } = request; //verifica se a conta é válida ou não
+
+  const statementOperation = {
+    description, 
+    amount, 
+    createdAt: new Date(),
+    type: "credit"
+  }
+
+  //Para inserir essa operação dentro do meu Customer
+  //Sempre que a gente fizer um operação ele vai inserir dentro statement
+  customer.statement.push(statementOperation)
+
+  //Se der sucesso
+  return response.status(201).send();
 })
 
 app.listen(3333);

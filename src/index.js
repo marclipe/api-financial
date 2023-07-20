@@ -35,15 +35,16 @@ app.post("/account", (request, response) => {
   return response.status(201).send();
 })
 
-app.get("/statement/:cpf", (request, response) => {
-  const { cpf } = request.params; //A gente vai buscar o cpf do nosso cliente pelos Route Params
+app.get("/statement", (request, response) => {
+  const { cpf } = request.headers;
 
-  //A gente precisa buscar o nosso cliente, precisamos recuperar statement  
-  //find é porque precisamos retornar retornar todos os dados 
   const customer = customers.find(customer => customer.cpf === cpf);
-  console.log(customer.statement);
 
-  //Se existir ele vai retornar o customer dentro do statement 
+  //Se não tiver o customer eu retorno o response com o status 400
+  if(!customer) {
+    return response.status(400).json({error: "Customer not found!"})
+  }
+
   return response.json(customer.statement);
 })
 

@@ -1,4 +1,4 @@
-import express from "express";
+import express, { request, response } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 const app = express();
@@ -113,6 +113,22 @@ app.get("/statement/date", verifyIfExistsAccountCPF, (request, response) => {
   statement.createdAt.toDateString() === new Date(dateFormat).toDateString())
 
   return response.json(statement)
+})
+
+app.put("/account", verifyIfExistsAccountCPF, (request, response) => {
+  const { customer } = request;
+  const { name } = request.body;
+
+  customer.name = name; //Vamos alterar o name
+
+  //Se for sucesso 
+  return response.status(201).send();
+})
+
+app.get("/account", verifyIfExistsAccountCPF, (request, response) => {
+  const { customer } = request;
+
+  return response.json(customer);
 })
 
 app.listen(3333);

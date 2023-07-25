@@ -104,10 +104,7 @@ app.get("/statement/date", verifyIfExistsAccountCPF, (request, response) => {
   const { customer } = request;
   const { date } = request.query; 
 
-  //Quero pegar todas informações daquele dia, independente da hora
-  const dateFormat = new Date(date + " 00:00"); //Precismos ter um espaço
-
-  //Vamos percorrer o customer, para retornar apenas o extrato bancário do dia que estamos pedindo
+  const dateFormat = new Date(date + " 00:00");
   const statement = customer.statement
   .filter((statement) => 
   statement.createdAt.toDateString() === new Date(dateFormat).toDateString())
@@ -119,9 +116,8 @@ app.put("/account", verifyIfExistsAccountCPF, (request, response) => {
   const { customer } = request;
   const { name } = request.body;
 
-  customer.name = name; //Vamos alterar o name
+  customer.name = name; 
 
-  //Se for sucesso 
   return response.status(201).send();
 })
 
@@ -129,6 +125,23 @@ app.get("/account", verifyIfExistsAccountCPF, (request, response) => {
   const { customer } = request;
 
   return response.json(customer);
+})
+
+app.delete("/account", verifyIfExistsAccountCPF, (request, response) => {
+  const { customer } = request; 
+
+  //splice
+  customers.splice(customer, 1);
+
+  return response.status(200).json(customers)
+})
+
+app.get("/balance", verifyIfExistsAccountCPF, (request, response) => {
+  const {customer} = request
+
+  const balance = getBalance(customer.statement);
+
+  return response.json(balance);
 })
 
 app.listen(3333);

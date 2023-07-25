@@ -1,4 +1,4 @@
-import express, { response } from "express";
+import express from "express";
 import { v4 as uuidv4 } from "uuid";
 
 const app = express();
@@ -7,7 +7,7 @@ const customers = [];
 
 app.use(express.json())
 
-//Middleware de verificação de conta
+
 function verifyIfExistsAccountCPF(request, response, next) {
   const { cpf } = request.headers;
 
@@ -22,21 +22,17 @@ function verifyIfExistsAccountCPF(request, response, next) {
 
   return next();
 }
-//Para saber quanto tem em conta, a gente vai receber o statement que é quem vai armazenar as informações da nossa conta. 
+
 function getBalance(statement) {
-  //A função reduce vai pegar as info de determinado valor e vai transformar em valor somente.
-  //O cálculo daquilo que entrou menos o cálculo daquilo que saiu
-  //acc = acumulador e operation = o objeto que queremos alterar 
-  //débito subtrai, crédito adiciona
   const balance = statement.reduce((acc, operation) => {
     if(operation.type === 'credit') {
       return acc + operation.amount;
     } else {
       return acc - operation.amount;
     }
-  }, 0) //Vamos iniciar o nosso reduce em 0
+  }, 0)
 
-  return balance; //ele vai retornar calculando o crédito e débito
+  return balance;
 }
 
 app.post("/account", (request, response) => {
@@ -67,7 +63,6 @@ app.get("/statement", verifyIfExistsAccountCPF, (request, response) => {
   return response.json(customer.statement);
 })
 
-//Vamos precisar do Middleware de verificação 
 app.post("/deposit", verifyIfExistsAccountCPF, (request, response) => {
   const { description, amount } = request.body;
 
@@ -86,27 +81,38 @@ app.post("/deposit", verifyIfExistsAccountCPF, (request, response) => {
 })
 
 app.post("/withdraw", verifyIfExistsAccountCPF, (request, response) => {
-  const { amount } = request.body; //A quantia que a gente quer fazer o saque
-  const { customer } = request; //Para a gente pegar as informações de quanto ele tem em conta.
+  const { amount } = request.body; 
+  const { customer } = request;
 
-  const balance = getBalance(customer.statement); //customer.statement é onde vão ficar nossas operações
+  const balance = getBalance(customer.statement);
 
-  //Não tem como sacar valores maior do que eu tenho em conta
   if (balance < amount) {
     return response.status(400).json({ error: "Insufficient funds!" });
   }
 
-  //Se tiver dinheiro suficiente em conta
   const statementOperation = {
     amount,
     createdAt: new Date(),
     type: "debit",
   };
-
-  //A gente insere o nossa operação de statementOperation no customer
   customer.statement.push(statementOperation);
 
   return response.status(201).send();
+})
+
+app.get("/statement/date", verifyIfExistsAccountCPF, (request, response) => {
+  const { customer } = request;
+  const { date } = request.query; 
+
+  //Quero pegar todas informações daquele dia, independente da hora
+  const dateFormat = new Date(date + " 00:00"); //Precismos ter um espaço
+
+  //Vamos percorrer o customer, para retornar apenas o extrato bancário do dia que estamos pedindo
+  const statement = customer.statement
+  .filter((statement) => 
+  statement.createdAt.toDateString() === new Date(dateFormat).toDateString())
+
+  return response.json(statement)
 })
 
 app.listen(3333);
